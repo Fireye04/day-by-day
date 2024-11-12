@@ -1,49 +1,61 @@
 import discord
 from discord.ext import commands
-from discord import app_commands
-
+import json
 
 intents = discord.Intents.all()
+intents.message_content = True
+intents.members = True
+intents.presences = True
 
 
-client = discord.Client(intents=intents)
 bot = commands.Bot(command_prefix='$', intents=intents)
 
-tree = app_commands.CommandTree(client)
+def getsecret():
+    f = open("secret.json")
+    data = json.load(f)
+    f.close()
+    return data
 
-@client.event
+def setsecret(target:dict):
+    with open("secret.json", "w") as sec:
+        json.dump(target, sec)
+
+
+data = getsecret()
+ 
+
+@bot.event
 async def on_ready():
-    await tree.sync(guild=discord.Object(id=1304510973390094367))
-    print(f"Logged in as {client.user}") 
+    print(f"Logged in as {bot.user}") 
     print("------")
 
-@client.event
-async def on_message(message):
-    print("fuck")
-    await bot.get_context(message)
-    await bot.process_commands(message)
+@bot.listen('on_message')
+async def process_github(message: discord.message.Message):
+    if (message.author == bot.user):
+        return
+    # must be in webhook channel and be the webhook bot
+    if (message.channel.id != 1305266938779402322 and message.author.id != 1305266962800185356):
+        return
+    message = await message.channel.fetch_message(1305268184617586729)
+    author = message.embeds[0].author.name
+    for key, value in data["users"].items():
+        if (author == value["github"]):
+            data["users"][key]["points"] += 1
+            setsecret(data)
+            await message.channel.send(f"Gave one point to user {key}!")
+            return
+    await message.channel.send(f"No user found with github of \"{author}\"")
 
 
-
-@tree.command(
-    name="ping",
-    description="Ping command to check bot's latency.",
-    guild=discord.Object(id=1304510973390094367),
-)
-async def slash_ping(ctx):
-    latency = round(client.latency * 1000)  # Latency in milliseconds
-    await ctx.response.send_message(f"Pong! Latency: {latency}ms")
-
-@bot.command(aliases=["w"])
-async def test_wh(ctx: commands.Context ):
-    print("gothere")
-    message = ctx.fetch_message(1305268184617586729)
-    print(message)
 
 @bot.command()
-async def fuck(ctx: commands.Context):
-    await ctx.send("Holy fucking shit your thing works my god chill out")
+async def register(ctx: commands.Context, arg:str):
+    tg = ctx.author.name
+    users:dict = data["users"]
+    if (tg in users.keys()):
+        await ctx.send("user already exists, updating information")
+    users[tg] = {"github":arg, "points": 0}
+    setsecret(data)
+    
 
-with open(".secret.txt", "r") as secret:
-    token = secret.readlines()[0]
-client.run(token)
+bot.run(data["token"])
