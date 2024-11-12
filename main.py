@@ -41,17 +41,22 @@ async def process_github(message: discord.message.Message):
         return
     data = getsecret()
     author = message.embeds[0].author.name
+    commits = message.embeds[0].description.splitlines()
     for key, value in data["users"].items():
         if (author == value["github"]):
-            print(f"{message.created_at.date()} | {datetime.strptime(value["last_commit"], "%Y-%m-%d").date()}")
             if (message.created_at.date() > datetime.strptime(value["last_commit"], "%Y-%m-%d").date()):
-                data["users"][key]["points"] += 10
-                await message.channel.send(f"Gave ten points to user {key}!")
-            else:
-                data["users"][key]["points"] += 1
-                await message.channel.send(f"Gave one point to user {key}!")
+                pts = 10 + len(commits) - 1
+                data["users"][key]["points"] += pts
+                await message.channel.send(f"Gave {pts} points to user {key}!")
 
-            print(message.created_at.date())
+            else:
+                data["users"][key]["points"] += len(commits)
+                if len(commits) == 1:
+                    msg = f"Gave one point to user {key}!" 
+                else:
+                    msg = f"Gave {len(commits)} points to user {key}!"
+                await message.channel.send(msg)
+
             data["users"][key]["last_commit"] = str(message.created_at.date())
             setsecret(data)
             await update_leaderboard(message, data)
