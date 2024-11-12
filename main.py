@@ -43,10 +43,26 @@ async def process_github(message: discord.message.Message):
             data["users"][key]["points"] += 1
             setsecret(data)
             await message.channel.send(f"Gave one point to user {key}!")
+            await update_leaderboard()
             return
     await message.channel.send(f"No user found with github of \"{author}\"")
 
+async def update_leaderboard():
+    leaderboard_chan = bot.get_channel(1305704135924125736)
+    leaderboard = leaderboard_chan.fetch_message()
+    # TODO: access message and update from database. Sort users by points and add any new ones here
 
+@bot.command()
+async def init_leaderboad(ctx):
+    embed = discord.Embed(
+        title=f"The Almighty Leaderboard",
+        color=discord.Color.random(),
+    )
+
+    for key, value in data["users"].items():
+        embed.add_field(name=f"{key} ({value["github"]})", value=f"Points: {value["points"]}") 
+
+    await ctx.send(embed=embed)
 
 @bot.command()
 async def register(ctx: commands.Context, arg:str):
@@ -56,6 +72,7 @@ async def register(ctx: commands.Context, arg:str):
         await ctx.send("user already exists, updating information")
     users[tg] = {"github":arg, "points": 0}
     setsecret(data)
+    # TODO: Add new user to leaderboard upon register
     
 
 bot.run(data["token"])
