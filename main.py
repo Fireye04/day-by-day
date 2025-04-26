@@ -41,7 +41,7 @@ class Reminder(commands.Cog):
                 days=7
             )
             if datetime.now().date() > lastcmt.date():
-                await (await self.bot.get_channel(1305266938779402322)).send(
+                await (self.bot.get_channel(1305266938779402322)).send(
                     f"WEE WOO! LOOKS LIKE <@!{key}> FORGOT TO COMMIT WITHIN THE LAST WEEK! POINT AND LAUGH!"
                 )
 
